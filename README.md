@@ -40,6 +40,15 @@ mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 This copies `app/` and `screenshots/` to the output directory and writes
 `dossier.json` with the vendored make.fun library.
 
+## Screenshots
+
+The `screenshots/` folder holds four captures from the app itself:
+
+- `1-cover.jpg` — the exported Wide Grid cover (1920 × 1080).
+- `2-editor.jpg` — the editor with the sample photos loaded and the cover on the canvas.
+- `3-polaroid.jpg` — the exported Portrait Polaroid cover (1080 × 1350).
+- `4-strips.jpg` — the exported Square Strips cover (1080 × 1080), one photo sliced into five cuts.
+
 ## Credits
 
 - Type: Anton and Yellowtail, both under the SIL Open Font License 1.1 —
