@@ -1,0 +1,23 @@
+Fonts bundled with SOLMARA Cover Studio
+=======================================
+
+Anton-Regular.ttf
+  Copyright The Anton Project Authors
+  https://github.com/googlefonts/AntonFont
+  Licensed under the SIL Open Font License, Version 1.1.
+
+Yellowtail-Regular.ttf
+  Copyright The Yellowtail Project Authors
+  https://github.com/googlefonts/Yellowtail
+  Licensed under the SIL Open Font License, Version 1.1.
+
+SIL Open Font License, Version 1.1 — summary
+--------------------------------------------
+The fonts, including any derivative works, can be bundled, embedded,
+redistributed and sold with any software provided that any reserved
+names are not used by derivative works. The fonts and derivatives,
+however, cannot be released under any other type of license. The
+requirement for fonts to remain under this license does not apply to
+any document created using the fonts or their derivatives.
+
+The full license text is available at https://openfontlicense.org
