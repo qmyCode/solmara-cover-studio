@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLMARA Cover Studio — GTA-style cover art maker</title>
+<meta name="description" content="Turn your photos into multi-panel GTA-style cover art: Poster Ink grades, bold lettering, PNG export in the common post sizes.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23FF2D78'/></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">SOLMARA</span>
+    <span class="brand-sub">COVER STUDIO</span>
+  </div>
+  <ol class="steps">
+    <li><b>1</b> Add photos</li>
+    <li><b>2</b> Pick a layout</li>
+    <li><b>3</b> Export</li>
+  </ol>
+  <div class="size-group" role="group" aria-label="Export size">
+    <button type="button" class="size-btn" data-size="1920x1080">1920 × 1080</button>
+    <button type="button" class="size-btn" data-size="1080x1350">1080 × 1350</button>
+    <button type="button" class="size-btn" data-size="1080x1080">1080 × 1080</button>
+  </div>
+  <button type="button" id="exportBtn" class="export-btn top">EXPORT PNG</button>
+</header>
+
+<main class="workspace">
+  <aside class="panel-box tray">
+    <h2>Photos</h2>
+    <label class="add-btn" for="fileInput">+ Add photos</label>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <button type="button" id="autoFillBtn" class="ghost-btn">Auto-fill panels</button>
+    <div id="dropZone" class="drop">Drop photos here</div>
+    <ul id="trayList" class="tray-list"></ul>
+    <p class="note">Photos stay on your machine — never uploaded. Click a photo to drop it into the selected panel.</p>
+
+    <h2>Caption</h2>
+    <label class="field"><span>Title</span><input type="text" id="titleInput" value="SOLMARA" maxlength="24"></label>
+    <label class="field"><span>Subtitle</span><input type="text" id="subtitleInput" value="Bay of Sirens" maxlength="40"></label>
+    <label class="field"><span>Tagline</span><input type="text" id="taglineInput" value="EVERY SUNSET HAS A PRICE" maxlength="48"></label>
+    <label class="row between">
+      <span>Starburst sticker</span>
+      <input type="checkbox" id="stickerToggle" class="switch" checked>
+    </label>
+    <p class="note">Export (top right) downloads the exact post size of the layout you picked.</p>
+  </aside>
+
+  <section class="stage-wrap">
+    <canvas id="stage" width="1920" height="1080"></canvas>
+    <p class="hint" id="panelHint">Drag a panel to reframe it · Scroll to zoom it · Click a panel, then a photo, to swap it</p>
+  </section>
+
+  <aside class="panel-box controls">
+    <h2>Layout</h2>
+    <div id="layoutList" class="layout-list"></div>
+
+    <h2>Grade</h2>
+    <div id="gradeRow" class="grade-row"></div>
+
+    <h2>Poster Ink</h2>
+    <label class="row between">
+      <span>Halftone ink</span>
+      <input type="checkbox" id="inkToggle" class="switch" checked>
+    </label>
+    <label class="row">
+      <span class="row-label">Bands</span>
+      <input type="range" id="bandsRange" min="4" max="8" step="1" value="6">
+      <span class="row-val" id="bandsVal">6</span>
+    </label>
+    <label class="row">
+      <span class="row-label">Strength</span>
+      <input type="range" id="strengthRange" min="0" max="100" step="1" value="80">
+      <span class="row-val" id="strengthVal">80%</span>
+    </label>
+
+    <h2>Panel</h2>
+    <label class="row">
+      <span class="row-label">Zoom</span>
+      <input type="range" id="zoomRange" min="100" max="400" step="1" value="100">
+      <span class="row-val" id="zoomVal">—</span>
+    </label>
+  </aside>
+</main>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
