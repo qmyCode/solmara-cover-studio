@@ -23,6 +23,7 @@ export const state = {
   halftone: true,
   strength: 0.8,
   title: 'SOLMARA',
+  titleLine2: 'NIGHTS',
   subtitle: 'Bay of Sirens',
   tagline: 'EVERY SUNSET HAS A PRICE',
   sticker: true,
@@ -49,6 +50,7 @@ export function view() {
     halftone: state.halftone,
     strength: state.strength,
     title: state.title,
+    titleLine2: state.titleLine2,
     subtitle: state.subtitle,
     tagline: state.tagline,
     sticker: state.sticker,
@@ -93,6 +95,7 @@ export function setLayout(id) {
   const layout = layoutById(id);
   state.layoutId = layout.id;
   state.grade = layout.defaultGrade;
+  state.titleLine2 = layout.captions.titleLine2 || '';
   state.subtitle = layout.captions.subtitle;
   state.tagline = layout.captions.tagline;
   state.selected = null;

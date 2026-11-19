@@ -100,6 +100,7 @@ export function initEditor(api) {
       // Render each layout with its own default grade/captions for the thumb.
       const keep = { grade: state.grade, subtitle: state.subtitle, tagline: state.tagline };
       v.grade = layout.defaultGrade;
+      v.titleLine2 = layout.captions.titleLine2 || '';
       v.subtitle = layout.captions.subtitle;
       v.tagline = layout.captions.tagline;
       layout.render(octx, v, layout);

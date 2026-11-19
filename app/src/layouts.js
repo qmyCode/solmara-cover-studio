@@ -10,6 +10,8 @@ import { inkPhoto } from './ink.js';
 import {
   TITLE_GRADIENTS,
   drawBlockTitle,
+  drawStackedTitle,
+  drawStarRating,
   drawScriptSubtitle,
   drawTaglineBar,
   drawStarburst,
@@ -52,10 +54,10 @@ function panelState(view, layout, def) {
   };
 }
 
-function inkedFor(view, def) {
+function inkedFor(view, layout, def) {
   const photo = view.photos[def.photoIndex % view.photos.length];
   const grade = def.grade ? def.grade(view) : view.grade;
-  return inkPhoto(photo, grade, view.bands, view.halftone, view.strength);
+  return inkPhoto(photo, grade, view.bands, view.halftone, view.strength, layout.inkOpts);
 }
 
 // Draw one panel: the inked photo, cover-fitted into def.rect, positioned
@@ -63,7 +65,7 @@ function inkedFor(view, def) {
 // user drags). Records metrics for the editor.
 export function drawPanel(ctx, view, layout, def, target) {
   const st = panelState(view, layout, def);
-  const src = inkedFor(view, { ...def, photoIndex: st.photo });
+  const src = inkedFor(view, layout, { ...def, photoIndex: st.photo });
   const rect = target || def.rect;
   const scale = Math.max(rect.w / src.width, rect.h / src.height) * st.zoom;
   const dw = src.width * scale;
@@ -94,15 +96,31 @@ function gradientKeyFor(view, layout) {
   return layout.titleGradient || 'sunset';
 }
 
-// The wide/square title band: dark gradient strip with three fixed zones —
-// title left, tagline top-right, script subtitle lower-right of the title.
+// The wide/square title band: dark gradient strip with fixed zones —
+// title left (a stacked two-line masthead on layouts that ask for it,
+// one line otherwise), tagline top-right with the star-rating strip under
+// it on hero layouts, script subtitle lower-right of the title.
 // Zones never overlap, and every element is clamped to the bottom limit.
 function drawTitleBand(ctx, view, layout, band, opts) {
+  const [bandTop, bandBottom] = layout.band || ['#2C0A4E', '#14022A'];
   const grad = ctx.createLinearGradient(0, band.y, 0, band.y + band.h);
-  grad.addColorStop(0, '#2C0A4E');
-  grad.addColorStop(1, '#14022A');
+  grad.addColorStop(0, bandTop);
+  grad.addColorStop(1, bandBottom);
   ctx.fillStyle = grad;
   ctx.fillRect(band.x, band.y, band.w, band.h);
+
+  // A layout may cap its band with a glowing neon horizon line where the
+  // panels meet the title strip — the city-lights layouts use it.
+  if (layout.bandGlow) {
+    const glowH = Math.max(3, Math.round((5 * layout.h) / 1080));
+    ctx.save();
+    ctx.shadowColor = layout.bandGlow;
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = layout.bandGlow;
+    ctx.fillRect(band.x, band.y, band.w, glowH);
+    ctx.fillRect(band.x, band.y, band.w, glowH);
+    ctx.restore();
+  }
 
   const limit = bottomLimit(layout.h);
   const stops = TITLE_GRADIENTS[gradientKeyFor(view, layout)];
@@ -117,15 +135,34 @@ function drawTitleBand(ctx, view, layout, band, opts) {
     limitBottom: limit,
   });
 
-  const titleW = drawBlockTitle(ctx, {
-    text: view.title,
-    x: band.x + opts.padX,
-    y: baseline,
-    maxWidth: opts.titleMaxW,
-    size: opts.titleSize,
-    stops,
-    limitBottom: limit,
-  });
+  if (layout.starRating) {
+    drawStarRating(ctx, {
+      right: band.x + band.w - opts.padX,
+      y: band.y + opts.taglineCy + (opts.taglineSize * 1.78) / 2 + Math.round((14 * layout.h) / 1080),
+      size: opts.starSize,
+      count: 5,
+    });
+  }
+
+  const titleW = layout.stackedTitle && view.title && view.titleLine2
+    ? drawStackedTitle(ctx, {
+      lines: [view.title, view.titleLine2],
+      x: band.x + opts.padX,
+      yBottom: baseline,
+      maxWidth: opts.titleMaxW,
+      size: opts.stackedSize,
+      stops,
+      limitBottom: limit,
+    })
+    : drawBlockTitle(ctx, {
+      text: view.title,
+      x: band.x + opts.padX,
+      y: baseline,
+      maxWidth: opts.titleMaxW,
+      size: opts.titleSize,
+      stops,
+      limitBottom: limit,
+    });
 
   const subX = band.x + opts.padX + titleW + opts.subGap;
   drawScriptSubtitle(ctx, {
@@ -144,28 +181,32 @@ function stickerOnHero(ctx, view, cx, cy, r) {
 
 // ---------------------------------------------------------------- Wide grid
 const widePanels = [
-  { key: 'hero', rect: { x: 0, y: 0, w: 730, h: 800 }, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'couple', rect: { x: 742, y: 0, w: 610, h: 394 }, photo: 1, fx: 0.5, fy: 0.32 },
-  { key: 'skyline', rect: { x: 742, y: 406, w: 610, h: 394 }, photo: 3, fx: 0.5, fy: 0.55 },
-  { key: 'driver', rect: { x: 1364, y: 0, w: 556, h: 800 }, photo: 2, fx: 0.42, fy: 0.35 },
+  { key: 'hero', rect: { x: 0, y: 0, w: 730, h: 752 }, photo: 0, fx: 0.5, fy: 0.30 },
+  { key: 'couple', rect: { x: 742, y: 0, w: 610, h: 370 }, photo: 1, fx: 0.5, fy: 0.32 },
+  { key: 'skyline', rect: { x: 742, y: 382, w: 610, h: 370 }, photo: 3, fx: 0.5, fy: 0.55 },
+  { key: 'driver', rect: { x: 1364, y: 0, w: 556, h: 752 }, photo: 2, fx: 0.42, fy: 0.35 },
 ];
 
-const wideBand = { x: 0, y: 812, w: 1920, h: 268 };
-const wideBandOpts = { padX: 48, titleSize: 218, titleMaxW: 1000, subSize: 118, subGap: 30, taglineCy: 74, taglineMaxW: 700, taglineSize: 38 };
+// The wide band is tall enough to carry the stacked two-line masthead.
+const WIDE_BAND_H = 328;
+const wideBandOpts = { padX: 48, titleSize: 218, stackedSize: 158, starSize: 30, titleMaxW: 1000, subSize: 118, subGap: 30, taglineCy: 74, taglineMaxW: 700, taglineSize: 38 };
 
 function renderWide(ctx, view, layout) {
   fillCanvas(ctx, layout.w, layout.h, '#000000');
   for (const def of layout.panels) drawPanel(ctx, view, layout, def);
   stickerOnHero(ctx, view, 118, 118, 88);
-  drawTitleBand(ctx, view, layout, wideBand, wideBandOpts);
+  drawTitleBand(ctx, view, layout, { x: 0, y: layout.h - WIDE_BAND_H, w: layout.w, h: WIDE_BAND_H }, wideBandOpts);
 }
 
 // ---------------------------------------------------------------- Wide neon
+// The city is the hero here: the skyline runs as a full-width banner of
+// night lights across the top, and the three character panels sit under
+// it like a cast strip on a movie poster.
 const neonPanels = [
-  { key: 'hero', rect: { x: 0, y: 0, w: 580, h: 800 }, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'couple', rect: { x: 592, y: 0, w: 586, h: 394 }, photo: 1, fx: 0.5, fy: 0.32 },
-  { key: 'skyline', rect: { x: 592, y: 406, w: 586, h: 394 }, photo: 3, fx: 0.5, fy: 0.55 },
-  { key: 'driver', rect: { x: 1190, y: 0, w: 730, h: 800 }, photo: 2, fx: 0.42, fy: 0.35 },
+  { key: 'skyline', rect: { x: 0, y: 0, w: 1920, h: 400 }, photo: 3, fx: 0.5, fy: 0.52 },
+  { key: 'hero', rect: { x: 0, y: 412, w: 620, h: 340 }, photo: 0, fx: 0.5, fy: 0.30 },
+  { key: 'couple', rect: { x: 632, y: 412, w: 620, h: 340 }, photo: 1, fx: 0.5, fy: 0.32 },
+  { key: 'driver', rect: { x: 1264, y: 412, w: 656, h: 340 }, photo: 2, fx: 0.42, fy: 0.35 },
 ];
 
 // --------------------------------------------------------------- Square grid
@@ -299,13 +340,23 @@ export const LAYOUTS = [
   {
     id: 'wide', name: 'Wide Grid', w: 1920, h: 1080, size: '1920 × 1080',
     defaultGrade: 'sunset', titleGradient: 'sunset',
-    captions: { subtitle: 'Bay of Sirens', tagline: 'EVERY SUNSET HAS A PRICE' },
+    stackedTitle: true, starRating: true,
+    // Eased ink: dots only in the deep shadows and softer when they land,
+    // a lighter map mix — faces stay photographic, the poster grade stays.
+    inkOpts: { htGate: 0.64, htOpacity: 0.52, mapMix: 0.78 },
+    captions: { subtitle: 'Bay of Sirens', tagline: 'EVERY SUNSET HAS A PRICE', titleLine2: 'NIGHTS' },
     panels: widePanels, render: renderWide,
   },
   {
     id: 'neon', name: 'Wide Neon', w: 1920, h: 1080, size: '1920 × 1080',
     defaultGrade: 'neon', titleGradient: 'neon',
-    captions: { subtitle: 'Neon Confessions', tagline: 'THE CITY PAYS IN NEON' },
+    stackedTitle: true, starRating: true,
+    // Night-city band: near-black indigo under a hot-pink neon horizon.
+    band: ['#150838', '#030110'], bandGlow: '#FF2D96',
+    // Eased halftone like the hero, but the map mix runs at full strength
+    // so the neon grade owns the night.
+    inkOpts: { htGate: 0.64, htOpacity: 0.52, mapMix: 0.86 },
+    captions: { subtitle: 'Neon Confessions', tagline: 'THE CITY PAYS IN NEON', titleLine2: 'NIGHTS' },
     panels: neonPanels, render: renderWide,
   },
   {
