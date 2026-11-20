@@ -75,6 +75,7 @@ body {
   font-size: 12px;
   vertical-align: -5px;
 }
+.steps .step-arrow { color: #ff2d78; font-weight: 700; align-self: center; }
 
 .size-group { margin-left: auto; display: flex; gap: 8px; }
 .size-btn {
