@@ -1,0 +1,333 @@
+@font-face {
+  font-family: "Anton";
+  src: url("fonts/Anton-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Yellowtail";
+  src: url("fonts/Yellowtail-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #0c0616;
+  color: #f3eafd;
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(217, 38, 170, 0.16), transparent 60%),
+    radial-gradient(900px 480px at 0% 110%, rgba(249, 115, 22, 0.12), transparent 60%),
+    #0c0616;
+}
+
+/* ------------------------------------------------------------------ top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #2e1850;
+  background: rgba(16, 7, 32, 0.85);
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand-mark {
+  font-family: "Anton", sans-serif;
+  font-size: 27px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #fff3c4 5%, #ffc53d 45%, #f97316 75%, #ec4899 105%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.brand-sub {
+  font-family: "Anton", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  color: #c9a7ff;
+}
+
+.steps {
+  display: flex;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: #b9a8d9;
+  font-size: 13.5px;
+}
+.steps b {
+  display: inline-grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #ff2d78;
+  color: #fff;
+  font-size: 12px;
+  vertical-align: -5px;
+}
+.steps .step-arrow { color: #ff2d78; font-weight: 700; align-self: center; }
+
+.size-group { margin-left: auto; display: flex; gap: 6px; }
+.size-btn {
+  font: inherit;
+  font-size: 11.5px;
+  padding: 6px 8px;
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid #3d2066;
+  background: #190b31;
+  color: #cdbcf0;
+  cursor: pointer;
+}
+.size-btn.on { background: #ff2d78; border-color: #ff2d78; color: #fff; }
+
+/* ---------------------------------------------------------------- workspace */
+.workspace {
+  display: grid;
+  grid-template-columns: 238px minmax(0, 1fr) 302px;
+  gap: 14px;
+  padding: 14px;
+  align-items: start;
+}
+
+.panel-box {
+  background: rgba(24, 11, 46, 0.92);
+  border: 1px solid #2e1850;
+  border-radius: 14px;
+  padding: 14px;
+}
+.panel-box h2 {
+  margin: 14px 0 8px;
+  font-family: "Anton", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.22em;
+  color: #ffb35c;
+  text-transform: uppercase;
+}
+.panel-box h2:first-child { margin-top: 0; }
+
+/* -------------------------------------------------------------------- tray */
+/* "Your photos" filmstrip: the add tile leads, loaded photos follow with
+   their file names, and photos placed on the cover carry a gold check. */
+.tray-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tray-count {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid #ff2d78;
+  color: #ff9dbd;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ghost-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  border-radius: 10px;
+  border: 1px solid #3d2066;
+  background: #190b31;
+  color: #cdbcf0;
+  font: inherit;
+  cursor: pointer;
+}
+.tray-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  border-radius: 10px;
+}
+.tray-list.over { outline: 2px dashed #ff2d78; outline-offset: 3px; }
+.tray-list li {
+  position: relative;
+  height: 76px;
+  border-radius: 9px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid #2e1850;
+}
+.tray-list img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tray-list li > span {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 2px 6px;
+  font-size: 11px;
+  background: rgba(10, 3, 24, 0.78);
+  color: #e9ddff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tray-list li.placed { border-color: #ffc53d; }
+.tray-list .placed-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 18px; height: 18px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: #ffc53d;
+  color: #2b1503;
+  font-size: 11px;
+  font-weight: 900;
+}
+.tray-list li.add-tile {
+  border: 1.5px dashed #ff2d78;
+  background: linear-gradient(160deg, rgba(249, 115, 22, 0.20), rgba(255, 45, 120, 0.20));
+}
+.tray-list li.add-tile label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  color: #fff;
+}
+.tray-list .add-plus { font-size: 24px; font-weight: 300; line-height: 1; color: #ffb35c; }
+.tray-list .add-text { font-size: 13px; font-weight: 700; }
+.tray-list .add-sub { font-size: 10.5px; color: #cdbcf0; }
+.note { color: #9d8bc4; font-size: 12.5px; margin: 12px 0 0; }
+
+/* ------------------------------------------------------------------- stage */
+.stage-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+#stage {
+  max-width: 100%;
+  max-height: calc(100vh - 170px);
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px #2e1850;
+  cursor: grab;
+  touch-action: none;
+  background: #000;
+}
+#stage:active { cursor: grabbing; }
+.hint { color: #9d8bc4; font-size: 13px; margin: 0; text-align: center; }
+
+/* ---------------------------------------------------------------- controls */
+.layout-list { display: flex; flex-direction: column; gap: 8px; }
+.layout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #2e1850;
+  background: #150829;
+  color: #e9ddff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.layout-btn canvas { width: 86px; height: auto; border-radius: 6px; flex: none; }
+.layout-btn.on { border-color: #ff2d78; box-shadow: 0 0 0 1px #ff2d78 inset; }
+
+.grade-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grade-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+  border-radius: 10px;
+  border: 1px solid #2e1850;
+  background: #150829;
+  color: #e9ddff;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.grade-btn .swatch { height: 16px; border-radius: 5px; }
+.grade-btn.on { border-color: #ffc53d; box-shadow: 0 0 0 1px #ffc53d inset; }
+
+.row { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+.row.between { justify-content: space-between; }
+.row-label { width: 62px; color: #cdbcf0; font-size: 13.5px; flex: none; }
+.row input[type="range"] { flex: 1; accent-color: #ff2d78; min-width: 0; }
+.row-val { width: 40px; text-align: right; color: #ffb35c; font-size: 13px; flex: none; }
+.switch { accent-color: #ff2d78; width: 19px; height: 19px; }
+
+.field { display: block; margin-top: 9px; }
+.field span { display: block; color: #cdbcf0; font-size: 13px; margin-bottom: 4px; }
+.field input {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid #3d2066;
+  background: #120626;
+  color: #fff;
+  font: inherit;
+}
+.field input:focus { outline: 2px solid #ff2d78; border-color: transparent; }
+
+.export-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(90deg, #f97316, #ff2d78);
+  color: #fff;
+  font-family: "Anton", sans-serif;
+  font-size: 19px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+.export-btn:hover { filter: brightness(1.08); }
+.export-btn.top {
+  width: auto;
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 15px;
+  flex: none;
+}
+
+/* ------------------------------------------------------------- shot scenes */
+body.shot-cover .topbar,
+body.shot-cover .tray,
+body.shot-cover .controls,
+body.shot-cover .hint { display: none; }
+body.shot-cover .workspace { display: block; padding: 0; }
+body.shot-cover .stage-wrap { display: block; }
+body.shot-cover #stage {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: default;
+}
+
+@media (max-width: 1080px) {
+  .workspace { grid-template-columns: 1fr; }
+  .size-group { margin-left: 0; }
+}
