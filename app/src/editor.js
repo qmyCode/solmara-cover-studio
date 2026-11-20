@@ -2,7 +2,7 @@
 // with live thumbnails, grade swatches, Poster Ink controls, caption
 // fields, panel drag/zoom interaction and the PNG export.
 
-import { LAYOUTS, hitPanels, panelMetrics } from './layouts.js';
+import { LAYOUTS, EXPORT_SIZES, hitPanels, panelMetrics } from './layouts.js';
 import { GRADES } from './ink.js';
 
 function clamp01(v) {
@@ -270,13 +270,15 @@ export function initEditor(api) {
   // ---------------------------------------------------------------- export
   $('exportBtn').addEventListener('click', () => {
     const layout = api.currentLayout();
+    // The exported PNG is exactly the layout's EXPORT_SIZES entry.
+    const size = EXPORT_SIZES[layout.exportSize];
     const wasSelected = state.selected;
     state.selected = null;
     api.render();
     stage.toBlob((blob) => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `solmara-cover-${layout.id}-${layout.w}x${layout.h}.png`;
+      a.download = `solmara-cover-${layout.id}-${size.w}x${size.h}.png`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       state.selected = wasSelected;

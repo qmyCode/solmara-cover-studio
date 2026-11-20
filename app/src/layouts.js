@@ -57,7 +57,11 @@ function panelState(view, layout, def) {
 function inkedFor(view, layout, def) {
   const photo = view.photos[def.photoIndex % view.photos.length];
   const grade = def.grade ? def.grade(view) : view.grade;
-  return inkPhoto(photo, grade, view.bands, view.halftone, view.strength, layout.inkOpts);
+  // A panel may soften the layout's ink profile for its own photo (the
+  // neon-lit portrait needs less gradient map — its light is already in
+  // the photo, and a full-strength map flattens the face).
+  const opts = def.inkOpts ? { ...layout.inkOpts, ...def.inkOpts } : layout.inkOpts;
+  return inkPhoto(photo, grade, view.bands, view.halftone, view.strength, opts);
 }
 
 // Draw one panel: the inked photo, cover-fitted into def.rect, positioned
@@ -181,10 +185,10 @@ function stickerOnHero(ctx, view, cx, cy, r) {
 
 // ---------------------------------------------------------------- Wide grid
 const widePanels = [
-  { key: 'hero', rect: { x: 0, y: 0, w: 730, h: 752 }, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'couple', rect: { x: 742, y: 0, w: 610, h: 370 }, photo: 1, fx: 0.5, fy: 0.32 },
-  { key: 'skyline', rect: { x: 742, y: 382, w: 610, h: 370 }, photo: 3, fx: 0.5, fy: 0.55 },
-  { key: 'driver', rect: { x: 1364, y: 0, w: 556, h: 752 }, photo: 2, fx: 0.42, fy: 0.35 },
+  { key: 'hero', rect: { x: 0, y: 0, w: 730, h: 752 }, photo: 0, fx: 0.46, fy: 0.30 },
+  { key: 'couple', rect: { x: 742, y: 0, w: 610, h: 370 }, photo: 6, fx: 0.42, fy: 0.50 },
+  { key: 'skyline', rect: { x: 742, y: 382, w: 610, h: 370 }, photo: 8, fx: 0.5, fy: 0.55 },
+  { key: 'driver', rect: { x: 1364, y: 0, w: 556, h: 752 }, photo: 2, fx: 0.62, fy: 0.30 },
 ];
 
 // The wide band is tall enough to carry the stacked two-line masthead.
@@ -203,18 +207,18 @@ function renderWide(ctx, view, layout) {
 // night lights across the top, and the three character panels sit under
 // it like a cast strip on a movie poster.
 const neonPanels = [
-  { key: 'skyline', rect: { x: 0, y: 0, w: 1920, h: 400 }, photo: 3, fx: 0.5, fy: 0.52 },
-  { key: 'hero', rect: { x: 0, y: 412, w: 620, h: 340 }, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'couple', rect: { x: 632, y: 412, w: 620, h: 340 }, photo: 1, fx: 0.5, fy: 0.32 },
-  { key: 'driver', rect: { x: 1264, y: 412, w: 656, h: 340 }, photo: 2, fx: 0.42, fy: 0.35 },
+  { key: 'skyline', rect: { x: 0, y: 0, w: 1920, h: 400 }, photo: 8, fx: 0.5, fy: 0.25 },
+  { key: 'hero', rect: { x: 0, y: 412, w: 620, h: 340 }, photo: 3, fx: 0.45, fy: 0.32, inkOpts: { mapMix: 0.74 } },
+  { key: 'couple', rect: { x: 632, y: 412, w: 620, h: 340 }, photo: 1, fx: 0.5, fy: 0.28 },
+  { key: 'driver', rect: { x: 1264, y: 412, w: 656, h: 340 }, photo: 7, fx: 0.5, fy: 0.42 },
 ];
 
 // --------------------------------------------------------------- Square grid
 const gridPanels = [
-  { key: 'hero', rect: { x: 0, y: 0, w: 534, h: 424 }, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'couple', rect: { x: 546, y: 0, w: 534, h: 424 }, photo: 1, fx: 0.5, fy: 0.32 },
-  { key: 'driver', rect: { x: 0, y: 436, w: 534, h: 424 }, photo: 2, fx: 0.42, fy: 0.35 },
-  { key: 'skyline', rect: { x: 546, y: 436, w: 534, h: 424 }, photo: 3, fx: 0.5, fy: 0.55 },
+  { key: 'hero', rect: { x: 0, y: 0, w: 534, h: 424 }, photo: 0, fx: 0.46, fy: 0.30 },
+  { key: 'couple', rect: { x: 546, y: 0, w: 534, h: 424 }, photo: 5, fx: 0.55, fy: 0.30 },
+  { key: 'driver', rect: { x: 0, y: 436, w: 534, h: 424 }, photo: 4, fx: 0.5, fy: 0.30 },
+  { key: 'skyline', rect: { x: 546, y: 436, w: 534, h: 424 }, photo: 8, fx: 0.5, fy: 0.55 },
 ];
 
 const gridBand = { x: 0, y: 872, w: 1080, h: 208 };
@@ -231,12 +235,12 @@ function renderGrid(ctx, view, layout) {
 const CARD_W = 458;
 const CARD_H = 429;
 const polaroidCards = [
-  { key: 'hero', cx: 272, cy: 252, rot: -0.087, photo: 0, fx: 0.5, fy: 0.30 },
-  { key: 'skyline', cx: 808, cy: 242, rot: 0.07, photo: 3, fx: 0.5, fy: 0.5 },
-  // The driver card carries a neon accent when the cover grade is sunset,
+  { key: 'hero', cx: 272, cy: 252, rot: -0.087, photo: 0, fx: 0.46, fy: 0.30 },
+  { key: 'skyline', cx: 808, cy: 242, rot: 0.07, photo: 8, fx: 0.5, fy: 0.5 },
+  // The night card carries a neon accent when the cover grade is sunset,
   // the way a night shot sits among golden-hour prints.
-  { key: 'driver', cx: 282, cy: 1118, rot: 0.07, photo: 2, fx: 0.42, fy: 0.35, grade: (view) => (view.grade === 'sunset' ? 'neon' : view.grade) },
-  { key: 'couple', cx: 798, cy: 1112, rot: -0.07, photo: 1, fx: 0.5, fy: 0.32 },
+  { key: 'driver', cx: 282, cy: 1118, rot: 0.07, photo: 3, fx: 0.45, fy: 0.32, grade: (view) => (view.grade === 'sunset' ? 'neon' : view.grade), inkOpts: { mapMix: 0.58 } },
+  { key: 'couple', cx: 798, cy: 1112, rot: -0.07, photo: 6, fx: 0.42, fy: 0.50 },
 ];
 
 function renderPolaroid(ctx, view, layout) {
@@ -273,6 +277,14 @@ function renderPolaroid(ctx, view, layout) {
 
   const limit = bottomLimit(layout.h);
   const stops = TITLE_GRADIENTS[gradientKeyFor(view, layout)];
+  // The full cover treatment, same as the wide band: a five-star rating
+  // strip crowns the masthead so the portrait reads as a magazine cover,
+  // not a postcard — stars, block title, script and tagline plate.
+  const starSize = 34;
+  const starW = drawStarRating(ctx, {
+    x: layout.w / 2 - (5 * starSize + 4 * starSize * 0.22) / 2, y: 506, size: starSize, count: 5,
+  });
+  void starW;
   drawBlockTitle(ctx, {
     text: view.title, x: layout.w / 2, y: 716, maxWidth: 920, size: 168,
     stops, align: 'center', limitBottom: limit,
@@ -292,7 +304,7 @@ function renderPolaroid(ctx, view, layout) {
 // five vertical strips nudged by tiny vertical offsets (±3%). The face
 // appears once, aligned across the strips.
 const STRIP_OFFSETS = [0, 0.02, -0.03, 0.015, -0.01];
-const stripsPanel = { key: 'strips', rect: { x: 0, y: 0, w: 1080, h: 1080 }, photo: 0, fx: 0.5, fy: 0.32 };
+const stripsPanel = { key: 'strips', rect: { x: 0, y: 0, w: 1080, h: 1080 }, photo: 5, fx: 0.55, fy: 0.30 };
 
 function renderStrips(ctx, view, layout) {
   fillCanvas(ctx, layout.w, layout.h, '#000000');
@@ -318,10 +330,16 @@ function renderStrips(ctx, view, layout) {
 
   // Centre shade behind the lettering.
   ctx.fillStyle = 'rgba(14, 3, 32, 0.40)';
-  ctx.fillRect(0, 448, layout.w, 252);
+  ctx.fillRect(0, 408, layout.w, 284);
 
   const limit = bottomLimit(layout.h);
   const stops = TITLE_GRADIENTS[gradientKeyFor(view, layout)];
+  // Star strip over the title, like the other covers — the strips carry
+  // the same lettering system, not a caption pasted on a photo.
+  const stripStarSize = 30;
+  drawStarRating(ctx, {
+    x: layout.w / 2 - (5 * stripStarSize + 4 * stripStarSize * 0.22) / 2, y: 420, size: stripStarSize, count: 5,
+  });
   drawBlockTitle(ctx, {
     text: view.title, x: layout.w / 2, y: 640, maxWidth: 940, size: 186,
     stops, align: 'center', limitBottom: limit,
@@ -336,9 +354,24 @@ function renderStrips(ctx, view, layout) {
 }
 
 // ------------------------------------------------------------------ Registry
+// The three export sizes, named once and used everywhere: every layout's
+// canvas geometry comes from this registry, the editor's size buttons and
+// PNG export read the same entries, so a cover always lands on an exact
+// post size — 1080×1080 square, 1080×1350 portrait, 1920×1080 wide.
+export const EXPORT_SIZES = {
+  square: { key: 'square', w: 1080, h: 1080, label: '1080 × 1080' },
+  portrait: { key: 'portrait', w: 1080, h: 1350, label: '1080 × 1350' },
+  wide: { key: 'wide', w: 1920, h: 1080, label: '1920 × 1080' },
+};
+
+function sized(sizeKey) {
+  const s = EXPORT_SIZES[sizeKey];
+  return { exportSize: sizeKey, w: s.w, h: s.h, size: s.label };
+}
+
 export const LAYOUTS = [
   {
-    id: 'wide', name: 'Wide Grid', w: 1920, h: 1080, size: '1920 × 1080',
+    id: 'wide', name: 'Wide Grid', ...sized('wide'),
     defaultGrade: 'sunset', titleGradient: 'sunset',
     stackedTitle: true, starRating: true,
     // Eased ink: dots only in the deep shadows and softer when they land,
@@ -348,7 +381,7 @@ export const LAYOUTS = [
     panels: widePanels, render: renderWide,
   },
   {
-    id: 'neon', name: 'Wide Neon', w: 1920, h: 1080, size: '1920 × 1080',
+    id: 'neon', name: 'Wide Neon', ...sized('wide'),
     defaultGrade: 'neon', titleGradient: 'neon',
     stackedTitle: true, starRating: true,
     // Night-city band: near-black indigo under a hot-pink neon horizon.
@@ -360,20 +393,28 @@ export const LAYOUTS = [
     panels: neonPanels, render: renderWide,
   },
   {
-    id: 'polaroid', name: 'Portrait Polaroid', w: 1080, h: 1350, size: '1080 × 1350',
+    id: 'polaroid', name: 'Portrait Polaroid', ...sized('portrait'),
     defaultGrade: 'sunset', titleGradient: 'sunset',
+    // The photographic ink easing applies here too — v1 ran the prints at
+    // full halftone strength and the faces read as screenprint.
+    inkOpts: { htGate: 0.68, htOpacity: 0.52, mapMix: 0.78 },
     captions: { subtitle: 'Postcards from the Bay', tagline: 'WISH YOU WERE HERE' },
     panels: polaroidCards, render: renderPolaroid,
   },
   {
-    id: 'strips', name: 'Square Strips', w: 1080, h: 1080, size: '1080 × 1080',
+    id: 'strips', name: 'Square Strips', ...sized('square'),
     defaultGrade: 'golden', titleGradient: 'golden',
-    captions: { subtitle: 'The Girl from Solmara', tagline: 'SHE OWNS EVERY FRAME' },
+    // Eased like every other layout: the sliced face stays photographic,
+    // halftone only in the deepest shadows (a higher gate than the wide
+    // hero — the dots must not crawl over the one big face).
+    inkOpts: { htGate: 0.70, htOpacity: 0.52, mapMix: 0.78 },
+    captions: { subtitle: 'The Racer', tagline: 'SHE OWNS EVERY FRAME' },
     panels: [stripsPanel], render: renderStrips,
   },
   {
-    id: 'grid', name: 'Square Grid', w: 1080, h: 1080, size: '1080 × 1080',
+    id: 'grid', name: 'Square Grid', ...sized('square'),
     defaultGrade: 'sunset', titleGradient: 'sunset',
+    inkOpts: { htGate: 0.62, htOpacity: 0.55, mapMix: 0.80 },
     captions: { subtitle: 'Bay of Sirens', tagline: 'EVERY SUNSET HAS A PRICE' },
     panels: gridPanels, render: renderGrid,
   },

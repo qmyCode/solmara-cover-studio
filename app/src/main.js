@@ -8,18 +8,27 @@ import { layoutById, hitPanels, bottomLimit, textTrace } from './layouts.js';
 import { initEditor } from './editor.js';
 import { runShotIfRequested } from './shots.js';
 
+// The built-in cast: six distinct characters plus three scenes, shot as
+// one ensemble so every layout reads as the same crime epic. Panel
+// defaults in layouts.js draw on this order — a face appears at most once
+// per cover, and the same cast recurs across layouts.
 const SAMPLES = [
-  { file: 'samples/photo1-hero.png', label: 'Beach Hero' },
-  { file: 'samples/photo2-couple.png', label: 'The Couple' },
-  { file: 'samples/photo3-driver.png', label: 'The Driver' },
-  { file: 'samples/photo4-skyline.png', label: 'The Skyline' },
+  { file: 'samples/cast-1.jpg', label: 'Mara · The Lead' },
+  { file: 'samples/cast-2.jpg', label: 'The Sailor' },
+  { file: 'samples/cast-3.jpg', label: 'The Don' },
+  { file: 'samples/cast-4.jpg', label: 'Night Owl' },
+  { file: 'samples/cast-5.jpg', label: 'The Skater' },
+  { file: 'samples/cast-6.jpg', label: 'The Racer' },
+  { file: 'samples/cast-7.jpg', label: 'The Getaway' },
+  { file: 'samples/cast-8.jpg', label: 'The Driver' },
+  { file: 'samples/cast-9.jpg', label: 'The Rooftop' },
 ];
 
 export const state = {
   photos: [],
   layoutId: 'wide',
   grade: 'sunset',
-  bands: 6,
+  bands: 8,
   halftone: true,
   strength: 0.8,
   title: 'SOLMARA',
