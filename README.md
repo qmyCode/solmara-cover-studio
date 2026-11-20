@@ -19,9 +19,14 @@ tagline. Drag any panel to reframe it, scroll to zoom it, swap photos
 between panels, edit the caption, and export a PNG in the common post
 sizes: 1920 × 1080, 1080 × 1350 and 1080 × 1080.
 
-Three steps: **1** add photos, **2** pick a layout, **3** export. Photos
+Three steps: **1** add photos → **2** arrange → **3** export PNG. Photos
 are read on your own machine and never uploaded; the app is static files
 and works fully offline.
+
+The nine bundled samples are one cast — six characters and three scenes
+from the same bay city — so every layout tells the same story, and the
+Poster Ink easing keeps their faces photographic on every cover while
+the halftone lives only in the deep shadows.
 
 ## Run it
 
