@@ -55,11 +55,16 @@ const cache = new Map();
 //   htGate    — darkness a band must exceed before dots appear (0.52)
 //   htOpacity — how hard the dots ink over the band colour (0.82)
 //   mapMix    — gradient map vs original photo mix (MAP_MIX)
+//   edge      — ink-outline strength (0 = off): pixels sitting on a
+//               poster-band boundary are pulled toward a dark ink colour,
+//               so the flat bands read as drawn poster art with inked
+//               outlines instead of a graded photograph.
 export function inkPhoto(photo, gradeId, bands, halftoneOn, strength, opts = {}) {
   const htGate = opts.htGate !== undefined ? opts.htGate : 0.52;
   const htOpacity = opts.htOpacity !== undefined ? opts.htOpacity : 0.82;
   const mapMix = opts.mapMix !== undefined ? opts.mapMix : MAP_MIX;
-  const key = [photo.id, gradeId, bands, halftoneOn ? 1 : 0, Math.round(strength * 20), htGate, htOpacity, mapMix].join('|');
+  const edge = opts.edge !== undefined ? opts.edge : 0;
+  const key = [photo.id, gradeId, bands, halftoneOn ? 1 : 0, Math.round(strength * 20), htGate, htOpacity, mapMix, edge].join('|');
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -78,6 +83,8 @@ export function inkPhoto(photo, gradeId, bands, halftoneOn, strength, opts = {})
   const steps = Math.max(2, bands - 1);
   const keep = 1 - mapMix;
   const halfCell = DOT_CELL / 2;
+  // Poster-band index per pixel, kept for the ink-outline pass below.
+  const bandIdx = edge > 0 ? new Uint8Array(w * h) : null;
 
   for (let y = 0; y < h; y++) {
     // halftone: distance from this row to the nearest dot-centre row
@@ -88,7 +95,9 @@ export function inkPhoto(photo, gradeId, bands, halftoneOn, strength, opts = {})
       const g = px[i + 1];
       const b = px[i + 2];
       const lum = (r * 299 + g * 587 + b * 114) / 1000; // 0..255
-      const band = Math.round((lum / 255) * steps) / steps;
+      const bandStep = Math.round((lum / 255) * steps);
+      const band = bandStep / steps;
+      if (bandIdx) bandIdx[y * w + x] = bandStep;
       const li = Math.round(band * 255) * 3;
       let nr = lut[li] * mapMix + r * keep;
       let ng = lut[li + 1] * mapMix + g * keep;
@@ -112,6 +121,31 @@ export function inkPhoto(photo, gradeId, bands, halftoneOn, strength, opts = {})
       px[i] = nr;
       px[i + 1] = ng;
       px[i + 2] = nb;
+    }
+  }
+
+  // Ink outlines: a pixel whose poster band differs from its right or
+  // lower neighbour sits on a band boundary — pull it toward the dark
+  // ink colour. Flat colour fields bounded by dark lines are what make
+  // the treatment read as drawn cover art rather than a photo filter.
+  if (bandIdx) {
+    const inkR = 24;
+    const inkG = 3;
+    const inkB = 38;
+    const keepEdge = 1 - edge;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        const idx = row + x;
+        const b0 = bandIdx[idx];
+        const boundary = (x + 1 < w && bandIdx[idx + 1] !== b0)
+          || (y + 1 < h && bandIdx[idx + w] !== b0);
+        if (!boundary) continue;
+        const i = idx * 4;
+        px[i] = px[i] * keepEdge + inkR * edge;
+        px[i + 1] = px[i + 1] * keepEdge + inkG * edge;
+        px[i + 2] = px[i + 2] * keepEdge + inkB * edge;
+      }
     }
   }
 

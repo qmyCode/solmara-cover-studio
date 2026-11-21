@@ -16,6 +16,7 @@ import {
   drawTaglineBar,
   drawStarburst,
   drawDotField,
+  fitFontSize,
   textTrace,
 } from './lettering.js';
 
@@ -64,12 +65,15 @@ const FACE_INK = { mapMix: 0.66, htGate: 0.8, htOpacity: 0.4 };
 
 function inkedFor(view, layout, def) {
   const photo = view.photos[def.photoIndex % view.photos.length];
-  const grade = def.grade ? def.grade(view) : view.grade;
+  const grade = def.grade ? def.grade(view, layout) : view.grade;
   // A panel may soften the layout's ink profile for its own photo (the
   // neon-lit portrait needs less gradient map — its light is already in
   // the photo, and a full-strength map flattens the face).
   const opts = def.inkOpts ? { ...layout.inkOpts, ...def.inkOpts } : layout.inkOpts;
-  return inkPhoto(photo, grade, view.bands, view.halftone, view.strength, opts);
+  // A layout (or a single panel) may pin the poster band count — the
+  // ensemble family runs flatter bands than the studio default.
+  const bands = def.bands !== undefined ? def.bands : (layout.bands !== undefined ? layout.bands : view.bands);
+  return inkPhoto(photo, grade, bands, view.halftone, view.strength, opts);
 }
 
 // Draw one panel: the inked photo, cover-fitted into def.rect, positioned
@@ -91,9 +95,83 @@ export function drawPanel(ctx, view, layout, def, target) {
   ctx.rect(rect.x, rect.y, rect.w, rect.h);
   ctx.clip();
   ctx.drawImage(src, rect.x - ox * maxX, rect.y - oy * maxY, dw, dh);
+  if (def.tag) drawRoleTag(ctx, rect, def.tag, def.tagTop);
   ctx.restore();
   metrics.set(`${layout.id}:${def.key}`, { rect, dw, dh, maxX, maxY, ox, oy, zoom: st.zoom, photo: st.photo });
   return src;
+}
+
+const ANTON = '"Anton", sans-serif';
+
+// Role tag — the cast furniture of an ensemble poster: a black slanted
+// plate at a panel's bottom-left corner naming the character's part
+// (THE SIREN, THE KINGPIN…). A gold slash leads the white condensed
+// caps. Drawn inside the panel's clip, so it works identically on the
+// cover, in the editor and on user photos dropped into the panel.
+function drawRoleTag(ctx, rect, text, top = false) {
+  const fit = fitFontSize(ctx, text, ANTON, 40, Math.min(rect.w - 76, 320));
+  const px = fit.size;
+  const h = Math.round(px * 1.52);
+  const w = Math.round(fit.width + 54);
+  const x = rect.x + 14;
+  const y = top ? rect.y + 14 : rect.y + rect.h - 14 - h;
+  const slant = Math.round(h * 0.32);
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w - slant, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(8, 2, 20, 0.92)';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255, 233, 168, 0.8)';
+  ctx.stroke();
+  // Gold slash accent ahead of the name.
+  ctx.beginPath();
+  ctx.moveTo(x + 13, y + 8);
+  ctx.lineTo(x + 21, y + 8);
+  ctx.lineTo(x + 15, y + h - 8);
+  ctx.lineTo(x + 7, y + h - 8);
+  ctx.closePath();
+  ctx.fillStyle = '#FFC53D';
+  ctx.fill();
+  ctx.font = `${px}px ${ANTON}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#FFF7E6';
+  ctx.fillText(text, x + 32, y + h / 2 + px * 0.05);
+  ctx.restore();
+  textTrace.note(y + h);
+}
+
+// Letter-spaced Anton in one line, shrunk until it fits maxWidth — the
+// furniture voice of the poster strips (press quote, credits, COMING
+// SOON). (x, y) is the baseline start; align 'left' or 'center'.
+function drawTrackedText(ctx, { text, x, y, size, maxWidth, colour, align = 'left', tracking = 0.16 }) {
+  let px = size;
+  const widthAt = (s) => {
+    ctx.font = `${s}px ${ANTON}`;
+    let total = 0;
+    for (const ch of text) total += ctx.measureText(ch).width + s * tracking;
+    return total - s * tracking;
+  };
+  while (px > 10 && widthAt(px) > maxWidth) px -= 1;
+  const width = widthAt(px);
+  let cursor = align === 'center' ? x - width / 2 : x;
+  ctx.save();
+  ctx.font = `${px}px ${ANTON}`;
+  ctx.fillStyle = colour;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  for (const ch of text) {
+    ctx.fillText(ch, cursor, y);
+    cursor += ctx.measureText(ch).width + px * tracking;
+  }
+  ctx.restore();
+  textTrace.note(y + px * 0.08);
+  return width;
 }
 
 function fillCanvas(ctx, w, h, colour) {
@@ -364,6 +442,129 @@ function renderStrips(ctx, view, layout) {
   });
 }
 
+// ------------------------------------------------------------- Ensemble
+// The ensemble poster (V4): a many-panel cast mosaic under a press
+// strip, with the masthead overlapping the panels centre-bottom — the
+// grammar of a movie one-sheet. Seven panels, each carrying a role tag;
+// every panel runs the hard ink treatment (flat bands, inked outlines,
+// a near-full gradient map) with its own grade, so the mosaic reads as
+// drawn cover art in several palettes at once instead of one photo
+// collage under a single warm wash. A black furniture strip closes the
+// bottom: COMING SOON, the production credits and a barcode.
+//
+// Geometry (1920×1080): press strip 0–64, panels 64–1016, credits
+// strip 1016–1080. Title, script and tagline all land above the hard
+// bottom limit (1050) via the lettering clamps and the trace.
+const ENS_TOP = 64;
+const ENS_BOTTOM = 1016;
+
+function ensemblePanels(grades) {
+  return [
+    { key: 'hero', rect: { x: 0, y: ENS_TOP, w: 596, h: ENS_BOTTOM - ENS_TOP }, photo: 0, fx: 0.46, fy: 0.30, tag: 'THE SIREN', grade: () => grades.hero, inkOpts: { htGate: 0.88, htOpacity: 0.36, edge: 0.45 } },
+    { key: 'kingpin', rect: { x: 608, y: ENS_TOP, w: 648, h: 548 }, photo: 2, fx: 0.62, fy: 0.30, tag: 'THE KINGPIN', tagTop: true, grade: () => grades.kingpin },
+    { key: 'captain', rect: { x: 1268, y: ENS_TOP, w: 652, h: 548 }, photo: 1, fx: 0.5, fy: 0.35, tag: 'THE CAPTAIN', tagTop: true, grade: () => grades.captain },
+    { key: 'driver', rect: { x: 608, y: 624, w: 322, h: ENS_BOTTOM - 624 }, photo: 6, fx: 0.42, fy: 0.50, tag: 'THE DRIVER', grade: () => grades.driver },
+    { key: 'crew', rect: { x: 942, y: 624, w: 322, h: ENS_BOTTOM - 624 }, photo: 8, fx: 0.5, fy: 0.55, tag: 'THE CREW', grade: () => grades.crew },
+    { key: 'getaway', rect: { x: 1276, y: 624, w: 322, h: ENS_BOTTOM - 624 }, photo: 7, fx: 0.5, fy: 0.42, tag: 'THE GETAWAY', grade: () => grades.getaway },
+    { key: 'lookout', rect: { x: 1610, y: 624, w: 310, h: ENS_BOTTOM - 624 }, photo: 3, fx: 0.5, fy: 0.35, tag: 'THE LOOKOUT', grade: () => grades.lookout },
+  ];
+}
+
+// Deterministic barcode: a fixed-seed bar pattern in a white box —
+// pure canvas rectangles, original art, no borrowed marks.
+function drawBarcode(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(x, y, w, h);
+  let seed = 1877;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  ctx.fillStyle = '#0A0A0A';
+  let cursor = x + 7;
+  const inner = w - 14;
+  while (cursor < x + inner - 3) {
+    const bw = 1.5 + rnd() * 4.2;
+    if (rnd() > 0.38) ctx.fillRect(cursor, y + 5, bw, h - 10);
+    cursor += bw + 1.2 + rnd() * 2.4;
+  }
+  ctx.restore();
+}
+
+// The press strip across the top: five gold stars and the gazette
+// quote on the left, the VOL. 1 tag in a gold outline on the right.
+function drawPressStrip(ctx, layout) {
+  ctx.save();
+  ctx.fillStyle = '#07020F';
+  ctx.fillRect(0, 0, layout.w, ENS_TOP);
+  ctx.restore();
+  drawStarRating(ctx, { x: 26, y: 16, size: 30, count: 5 });
+  drawTrackedText(ctx, {
+    text: '"THE HOTTEST NIGHTS OF THE YEAR" — THE SOLMARA GAZETTE',
+    x: 252, y: 43, size: 28, maxWidth: 1420, colour: '#F5E9C9', tracking: 0.13,
+  });
+  ctx.save();
+  ctx.strokeStyle = '#FFC53D';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(1756, 12, 140, 40);
+  ctx.restore();
+  drawTrackedText(ctx, {
+    text: 'VOL. 1', x: 1826, y: 41, size: 25, maxWidth: 120, colour: '#FFC53D', align: 'center', tracking: 0.1,
+  });
+}
+
+// The credits strip across the bottom: COMING SOON on the left, the
+// production line centred, the barcode on the right. Baselines sit at
+// 1046 — above the 1050 bottom limit once the Anton descent lands.
+function drawCreditsStrip(ctx, layout) {
+  ctx.save();
+  ctx.fillStyle = '#07020F';
+  ctx.fillRect(0, ENS_BOTTOM, layout.w, layout.h - ENS_BOTTOM);
+  ctx.restore();
+  drawTrackedText(ctx, {
+    text: 'COMING SOON', x: 28, y: 1046, size: 30, maxWidth: 260, colour: '#FF7AB8', tracking: 0.18,
+  });
+  drawTrackedText(ctx, {
+    text: 'A SOLMARA PICTURES PRODUCTION · STARRING YOU · SHOT ON YOUR OWN CAMERA · INKED BY HAND',
+    x: 990, y: 1046, size: 25, maxWidth: 1450, colour: '#E9D9AE', align: 'center', tracking: 0.14,
+  });
+  drawBarcode(ctx, 1756, 1024, 140, 48);
+}
+
+function renderEnsemble(ctx, view, layout) {
+  fillCanvas(ctx, layout.w, layout.h, '#0B0318');
+  drawPressStrip(ctx, layout);
+  for (const def of layout.panels) drawPanel(ctx, view, layout, def);
+
+  const limit = bottomLimit(layout.h);
+  const stops = TITLE_GRADIENTS[gradientKeyFor(view, layout)];
+
+  // Gold rosette seal overlapping the right-hand panels.
+  drawStarburst(ctx, { cx: 1748, cy: 706, r: 92, line1: 'ORIGINAL', line2: 'COVER ART' });
+
+  // Tagline ribbon above the masthead, over the panel seam.
+  drawTaglineBar(ctx, {
+    text: view.tagline, cx: 1056, cy: 468, maxWidth: 780, size: 34, limitBottom: limit,
+  });
+
+  // The masthead overlaps the panels centre-bottom (~55% width).
+  drawStackedTitle(ctx, {
+    lines: [view.title, view.titleLine2],
+    x: 1056, yBottom: 892, maxWidth: 1150, size: 205,
+    stops, align: 'center', limitBottom: limit,
+  });
+  // The script's baseline rides high enough that its descenders clear
+  // the bottom-row role tags (their plates start at y 941) — at 948 the
+  // script's tail half-covered THE CREW's tag.
+  drawScriptSubtitle(ctx, {
+    text: view.subtitle, x: 1056, y: 900, maxWidth: 640, size: 96,
+    align: 'center', limitBottom: limit,
+  });
+
+  drawCreditsStrip(ctx, layout);
+}
+
 // ------------------------------------------------------------------ Registry
 // The three export sizes, named once and used everywhere: every layout's
 // canvas geometry comes from this registry, the editor's size buttons and
@@ -381,6 +582,36 @@ function sized(sizeKey) {
 }
 
 export const LAYOUTS = [
+  {
+    id: 'ensemble', name: 'Ensemble Poster', ...sized('wide'),
+    defaultGrade: 'sunset', titleGradient: 'sunset',
+    // The hard treatment: near-full gradient map, flat six-band
+    // posterise and inked band outlines; halftone gated deep so the
+    // dots stay off skin while the drawn character stays.
+    inkOpts: { mapMix: 0.92, htGate: 0.8, htOpacity: 0.45, edge: 0.6 },
+    bands: 6,
+    captions: { subtitle: 'Bay of Sirens', tagline: 'EVERY SUNSET HAS A PRICE', title: 'SOLMARA', titleLine2: 'NIGHTS' },
+    panels: ensemblePanels({ hero: 'sunset', kingpin: 'sunset', captain: 'miami', driver: 'sunset', crew: 'sunset', getaway: 'golden', lookout: 'neon' }),
+    render: renderEnsemble,
+  },
+  {
+    id: 'ensemble-night', name: 'Ensemble — Night Shift', ...sized('wide'),
+    defaultGrade: 'neon', titleGradient: 'neon',
+    inkOpts: { mapMix: 0.92, htGate: 0.8, htOpacity: 0.45, edge: 0.6 },
+    bands: 6,
+    captions: { subtitle: 'Neon Confessions', tagline: 'THE CITY PAYS IN NEON', title: 'NIGHT', titleLine2: 'SHIFT' },
+    panels: ensemblePanels({ hero: 'neon', kingpin: 'neon', captain: 'miami', driver: 'neon', crew: 'neon', getaway: 'miami', lookout: 'neon' }),
+    render: renderEnsemble,
+  },
+  {
+    id: 'ensemble-pier', name: 'Ensemble — Pier Pressure', ...sized('wide'),
+    defaultGrade: 'miami', titleGradient: 'miami',
+    inkOpts: { mapMix: 0.92, htGate: 0.8, htOpacity: 0.45, edge: 0.6 },
+    bands: 6,
+    captions: { subtitle: 'Sirens at the Pier', tagline: 'EVERY TIDE HAS A PRICE', title: 'PIER', titleLine2: 'PRESSURE' },
+    panels: ensemblePanels({ hero: 'miami', kingpin: 'sunset', captain: 'miami', driver: 'miami', crew: 'sunset', getaway: 'golden', lookout: 'neon' }),
+    render: renderEnsemble,
+  },
   {
     id: 'wide', name: 'Wide Grid', ...sized('wide'),
     defaultGrade: 'sunset', titleGradient: 'sunset',

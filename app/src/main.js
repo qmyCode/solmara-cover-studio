@@ -26,7 +26,7 @@ const SAMPLES = [
 
 export const state = {
   photos: [],
-  layoutId: 'wide',
+  layoutId: 'ensemble',
   grade: 'sunset',
   bands: 8,
   halftone: true,
@@ -107,6 +107,9 @@ export function setLayout(id) {
   const layout = layoutById(id);
   state.layoutId = layout.id;
   state.grade = layout.defaultGrade;
+  // A layout may carry its own masthead (the ensemble variants are
+  // titled posters in their own right); everything else is SOLMARA.
+  state.title = layout.captions.title || 'SOLMARA';
   state.titleLine2 = layout.captions.titleLine2 || '';
   state.subtitle = layout.captions.subtitle;
   state.tagline = layout.captions.tagline;
